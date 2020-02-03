@@ -77,8 +77,6 @@ any languages or frameworks you are comfortable with.
 
 * Working code that accomplishes the task outlined above.
 * Corresponding tests (unit and integration tests are both acceptable).
-* A **private** git repository demonstrating your development process.  If
-  providing a zip, include the entire repository.
 
 ## We do NOT expect you to worry about the following:
 
