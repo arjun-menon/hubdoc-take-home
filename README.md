@@ -61,8 +61,10 @@ all supplied invoices.
 Your service should also successfully process invoices from multiple concurrent
 users.
 
-While you are free to use whatever stack you'd like, you will have to use
-`pdftotext` in order to extract text from pdf documents.
+While you are free to use whatever stack you'd like, we recommend you use
+`pdftotext` to extract text from pdf documents.  If you do use `pdftotext` or
+another tool installed outside of your required modules, please make sure to
+tell us the version required.
 
 * https://linux.die.net/man/1/pdftotext
 * Linux and Mac users can use `brew` or `apt-get`
