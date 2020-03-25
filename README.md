@@ -16,7 +16,7 @@ documents is even more useful.
   * Attempts to extract the following data from the document
     * *Vendor* (e.g. Starbucks, Home Depot, McDonalds)
     * *Invoice Date* 
-    * *Invoice Amount* (a positive or negative value with at most 2 decimal
+    * *Amount Due* (a positive or negative value with at most 2 decimal
       places)
     * *Currency* (a three character currency code; e.g. CAD, GBP)
     * *Tax* (a positive or negative value with at most 2 decimal places)
@@ -46,6 +46,8 @@ documents is even more useful.
       response value to `null` or `undefined`.
     * The only fields that must always have a value are `uploadedBy` and
       `uploadTimestamp`
+    * `processingStatus` should reflect the current state of the document after
+      submission
 
 We have provided some bootstrap code that can accept a file upload. This
 template uses the following tech stack:
@@ -56,7 +58,8 @@ template uses the following tech stack:
 
 Within this package, you will find an `invoices` folder that contains a set of
 Hubdoc invoices. Your service should correctly extract the expected fields from
-all supplied invoices.
+all supplied invoices. Expect only files in the format of the invoices in this
+folder.
 
 Your service should also successfully process invoices from multiple concurrent
 users.
