@@ -3,7 +3,7 @@ const multer  = require('multer');
 const app = express();
 const port = 3000;
 
-const upload = multer({ dest: 'uploads/' });
+const upload = multer();
 
 app.get('/', (req, res) => res.send('Hello Hubdoc!'));
 
