@@ -2,6 +2,8 @@
 # Created by https://www.gitignore.io/api/vim,node,code,webstorm
 # Edit at https://www.gitignore.io/?templates=vim,node,code,webstorm
 
+.DS_Store
+
 ### Code ###
 .vscode/*
 !.vscode/settings.json
