@@ -76,7 +76,9 @@ tell us the version required.
 
 Although Hubdoc's codebase is primarily written in JS, you are not required to
 use any of the above tools or any of the provided code. Feel free to work with
-any languages or frameworks you are comfortable with. 
+any languages or frameworks you are comfortable with. Please include any notes
+on the platform (OS) used and if a non-Node service is provided, please include
+setup notes.
 
 ## We expect the following from you:
 
