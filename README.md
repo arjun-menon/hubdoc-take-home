@@ -16,7 +16,7 @@ documents is even more useful.
   * Attempts to extract the following data from the document
     * *Vendor* (e.g. Starbucks, Home Depot, McDonalds)
     * *Invoice Date* 
-    * *Amount Due* (a positive or negative value with at most 2 decimal
+    * *Total Due* (a positive or negative value with at most 2 decimal
       places)
     * *Currency* (a three character currency code; e.g. CAD, GBP)
     * *Tax* (a positive or negative value with at most 2 decimal places)
@@ -36,7 +36,7 @@ documents is even more useful.
     filesize: '<filesize>',
     vendorName: '<vendorName>',
     invoiceDate: '<invoiceDate>',
-    amountDue: '<amountDue>',
+    totalDue: '<totalDue>',
     currency: '<currency>',
     taxAmount: '<taxAmount>',
     processingStatus: '<status>',
@@ -45,9 +45,9 @@ documents is even more useful.
     * If you are unable to successfully extract a given field, you can set the
       response value to `null` or `undefined`.
     * The only fields that must always have a value are `uploadedBy` and
-      `uploadTimestamp`
-    * `processingStatus` should reflect the current state of the document after
-      submission
+      `uploadTimestamp`.
+    * `processingStatus` should reflect the current state of document
+      processing after submission. This is open to your interpretation.
 
 We have provided some bootstrap code that can accept a file upload. This
 template uses the following tech stack:
