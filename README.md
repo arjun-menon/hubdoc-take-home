@@ -64,15 +64,18 @@ folder.
 Your service should also successfully process invoices from multiple concurrent
 users.
 
-While you are free to use whatever stack you'd like, we recommend you use
-`pdftotext` to extract text from pdf documents.  If you do use `pdftotext` or
-another tool installed outside of your required modules, please make sure to
-tell us the version required.
+While you are free to use whatever stack you'd like, we recommend you use the
+`pdftotext` tool from the [poppler](https://poppler.freedesktop.org/) project
+to extract text from pdf documents.  If you do use `pdftotext` or another tool
+installed outside of your required modules, please make sure to tell us the
+version required.
 
-* https://linux.die.net/man/1/pdftotext
-* Linux and Mac users can use `brew` or `apt-get`
-* Windows users can find the relevant binaries here
-  * http://www.xpdfreader.com/download.html
+If using `pdftotext`:
+* Mac users can install with [Homebrew](https://brew.sh/): `brew install poppler`
+* Debian or Ubuntu Linux users can install with apt: `apt-get install -y
+  poppler-utils`
+* Windows users can install via [Scoop](https://scoop.sh/): `scoop install
+  poppler`
 
 Although Hubdoc's codebase is primarily written in JS, you are not required to
 use any of the above tools or any of the provided code. Feel free to work with
