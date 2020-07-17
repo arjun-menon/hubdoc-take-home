@@ -16,4 +16,9 @@ app.post('/upload', upload.single('file'), (req, res, next) => {
   res.sendStatus(200);
 })
 
-app.listen(port, () => console.log(`Hubdoc Intake listening on port ${port}!`))
+const server = app.listen(port, () => console.log(`Hubdoc Intake listening on port ${port}!`))
+
+module.exports = {
+  app,
+  server
+};
