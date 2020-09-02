@@ -14,16 +14,18 @@ documents is even more useful.
     'email=user@domain.com' localhost:3000/upload`
   * Accepts a .pdf document and a user email in the body of the request
   * Attempts to extract the following data from the document
-    * *Vendor* (e.g. Starbucks, Home Depot, McDonalds)
-    * *Invoice Date* 
-    * *Total Due* (a positive or negative value with at most 2 decimal
+    * *Vendor Name* (e.g. Starbucks, Home Depot, McDonalds)
+    * *Invoice Date*
+    * *Total* (a positive or negative number with at most 2 decimal
+      places)
+    * *Total Due* (a positive or negative number with at most 2 decimal
       places)
     * *Currency* (a three character currency code; e.g. CAD, GBP)
-    * *Tax* (a positive or negative value with at most 2 decimal places)
+    * *Tax Amount* (a positive or negative value with at most 2 decimal places)
   * Responds with a JSON payload containing an assigned document id:
   ```javascript
   { 
-    id: <someUniqueId>
+    id: '<some unique id>'
   }
   ```
 * Exposes an HTTP endpoint, `/document/:id` 
@@ -31,21 +33,22 @@ documents is even more useful.
   * Respond with the following payload: 
   ```javascript 
   { 
-    uploadedBy : '<userEmailAddress>',
+    uploadedBy : '<user email address>',
     uploadTimestamp : '<timestamp>',
     filesize: '<filesize>',
-    vendorName: '<vendorName>',
-    invoiceDate: '<invoiceDate>',
-    totalDue: '<totalDue>',
+    vendorName: '<vendor name>',
+    invoiceDate: '<invoice date>',
+    total: '<total>',
+    totalDue: '<total due>',
     currency: '<currency>',
-    taxAmount: '<taxAmount>',
+    taxAmount: '<tax amount>',
     processingStatus: '<status>',
   }
   ```
     * If you are unable to successfully extract a given field, you can set the
       response value to `null` or `undefined`.
-    * The only fields that must always have a value are `uploadedBy` and
-      `uploadTimestamp`.
+    * The only fields that must always have a value are `processingStatus`,
+      `uploadedBy` and `uploadTimestamp`.
     * `processingStatus` should reflect the current state of document
       processing after submission. This is open to your interpretation.
 
@@ -95,4 +98,3 @@ setup notes.
     don't expect to see code here*
 * Virus checking or document format validation (i.e. you can assume we will
   send you valid pdfs)
-
