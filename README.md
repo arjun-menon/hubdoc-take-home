@@ -82,9 +82,14 @@ If using `pdftotext`:
 
 Although Hubdoc's codebase is primarily written in JS, you are not required to
 use any of the above tools or any of the provided code. Feel free to work with
-any languages or frameworks you are comfortable with. Please include any notes
-on the platform (OS) used and if a non-Node service is provided, please include
-setup notes.
+any languages or frameworks you are comfortable with. If a non-Node service is
+provided, please include setup notes.
+
+Please also include:
+* Your OS (e.g. Windows 10, MacOS Big Sur, Ubuntu 20.04 LTS)
+* Version of dev platform used (e.g. Node 16.3.0, OpenJDK 18, .NET 5.0)
+* Versions of any other runtime dependencies required to run and evaluate your
+  assignment
 
 ## We expect the following from you:
 
