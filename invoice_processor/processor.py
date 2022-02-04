@@ -8,28 +8,47 @@ from pdfminer.pdfdocument import PDFDocument
 from pdfminer.layout import LAParams
 from pdfminer.pdfpage import PDFPage
 
-class Entity(object):
-    pass
+class TextFragment(object):
+    def __init__(self, textFragment):
+        self.text = self.textFragment
 
 def main():
-    print('Processing...\n')
-
     with open("../invoices/HubdocInvoice1.pdf", "rb") as inputFile:
         minedText1 = mineText1(inputFile)
         minedText2 = mineText2(inputFile)
 
-    fragments = list(filter(lambda s: len(s) > 0, (map(lambda s: s.strip(), minedText1.split('\n')))))
+    fragments = [textFragment for textFragment in 
+            filter(
+                lambda s: len(s) > 0,
+                (map(
+                    lambda s: s.strip(), 
+                    minedText1.split('\n'))
+                )
+            )
+        ]
 
-    print(fragments)
-    print('\n\n\n\n')
-    print(minedText2)
-    print('\n\n\n\n')
+    # print(fragments)
+    # print('\n\n\n\n')
+    # print(minedText2)
+    # print('\n\n\n\n')
 
-    nlp = stanza.Pipeline(lang='en', processors='tokenize,ner', verbose=False)
-    for frag in fragments:
-        doc = nlp(frag)
-        print(frag, repr(doc.ents))
-        print()
+    for fr in fragments:
+        positions = list(findall(fr, minedText2))
+        print(fr, positions)
+
+    # nlp = stanza.Pipeline(lang='en', processors='tokenize,ner', verbose=False)
+    # for frag in fragments:
+    #     doc = nlp(frag)
+    #     print(frag, repr(doc.ents))
+    #     print()
+
+def findall(p, s): # from https://stackoverflow.com/a/34445090
+    '''Yields all the positions of
+    the string p in the string s.'''
+    i = s.find(p)
+    while i != -1:
+        yield i
+        i = s.find(p, i+1)
 
 def mineText1(inputFile):
     outputString = StringIO()
@@ -44,10 +63,10 @@ def mineText1(inputFile):
 
 def mineText2(inputFile):
     outputFile = BytesIO()
-    resourceManager = PDFResourceManager(caching=False)
+    resourceManager = PDFResourceManager()
     device = TagExtractor(resourceManager, outputFile, codec='utf-8')
     interpreter = PDFPageInterpreter(resourceManager, device)
-    for page in PDFPage.get_pages(inputFile, caching=False):
+    for page in PDFPage.get_pages(inputFile):
         interpreter.process_page(page)
     return outputFile.getvalue().decode()
 
