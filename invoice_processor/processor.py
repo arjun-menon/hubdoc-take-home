@@ -63,6 +63,13 @@ class FileToProcess(object):
     def findPercentsWithIndices(self):
         return self.getAllEntitiesOfType('PERCENT', True)
 
+    def findFragmentByIncasesensitiveText(self, searchText):
+        searchText = searchText.strip().casefold()
+        for index, fr in enumerate(self.fragments):
+            if fr.text.casefold() == searchText:
+                return index
+        return None
+
 def getVendorName(f):
     orgs = f.getOrgs()
 
@@ -89,33 +96,70 @@ def getCurrency(f):
 
     return currency
 
+def extractAmountFromMoneyFragment(moneyFragment):
+    # the assertions below are based on structural expectations based on the example invoices
+    # in a proper implementation, we'd replace these assertions with intelligent hueristics, guesses, and/or with exceptions thrown.
+    assert len(moneyFragment.entities) == 1
+    moneyEntity = moneyFragment.entities[0]
+    assert moneyEntity.type == 'MONEY'
+    moneyAmount = round(float(moneyEntity.text), 2)
+
+    # if the amount is negative, we make the stanza entity amount negative as well
+    if moneyFragment.text[0] == '-':
+        moneyAmount *= -1
+
+    return moneyAmount
+
 def getTaxAmount(f):
     percents = f.findPercentsWithIndices()
 
     # we grab the last percent as the tax, based on the example invoices
     _, lastPercentIndex = percents[-1]
     taxFragment = f.fragments[lastPercentIndex + 1]
-    # the assertions below are based on structural expectations based on the example invoices
-    # in a proper implementation, we'd replace these assertions with intelligent hueristics, guesses, and/or with exceptions thrown.
-    assert len(taxFragment.entities) == 1
-    taxEntity = taxFragment.entities[0]
-    assert taxEntity.type == 'MONEY'
-    taxAmount = round(float(taxEntity.text), 2)
+    taxAmount = extractAmountFromMoneyFragment(taxFragment)
 
     return taxAmount
 
-def extractKeyInformation(f):
-    f.print()
+def getTotal(f):
+    totalTextFragmentIndex = f.findFragmentByIncasesensitiveText('total')
+    # we grab the money amount that appears right after 'Total'
+    totalFragment = f.fragments[totalTextFragmentIndex + 1]
+    total = extractAmountFromMoneyFragment(totalFragment)
 
+    return total
+
+def getTotalDue(f):
+    totalDueTextFragmentIndex = f.findFragmentByIncasesensitiveText('total due')
+    # we grab the money amount that appears right after 'Total Due'
+    totalDueFragment = f.fragments[totalDueTextFragmentIndex + 1]
+    totalDue = extractAmountFromMoneyFragment(totalDueFragment)
+
+    return totalDue
+
+def getPaidAmount(f):
+    paidTextFragmentIndex = f.findFragmentByIncasesensitiveText('paid')
+    # we grab the money amount that appears right after 'Paid'
+    paidAmountFragment = f.fragments[paidTextFragmentIndex + 1]
+    paid = extractAmountFromMoneyFragment(paidAmountFragment)
+
+    return paid
+
+def extractKeyInformation(f):
     vendorName = getVendorName(f)
     invoiceDate = getInvoiceDate(f)
     currency = getCurrency(f)
     taxAmount = getTaxAmount(f)
+    total = getTotal(f)
+    totalDue = getTotalDue(f)
+    paid = getPaidAmount(f)
 
     print('vendorName:', vendorName)
     print('invoiceDate:', invoiceDate)
     print('currency:', currency)
     print('taxAmount:', taxAmount)
+    print('total:', total)
+    print('paid:', paid)
+    print('totalDue:', totalDue)
 
     print('--------------------------------------------------------------------------------------------------------------')
 
