@@ -1,6 +1,8 @@
+from email.policy import default
 import stanza, os, pickle
 from hashlib import blake2b
 from io import StringIO, BytesIO
+import dateutil.parser as dateParser
 from pdfminer.pdfparser import PDFParser
 from pdfminer.converter import TextConverter
 from pdfminer.pdfdevice import TagExtractor
@@ -13,19 +15,58 @@ class TextFragment(object):
     def __init__(self, textFragment):
         self.text = textFragment
         self.pos = None
-        self.entities = None
+        self.entities = []
+
     def entityTypes(self):
         return [ent.type for ent in self.entities]
+
     def __str__(self):
         return '%s --> %r' % (self.text, self.entityTypes())
 
 class FileToProcess(object):
     def __init__(self, fragments):
         self.fragments = fragments
+
     def print(self):
         for fr in self.fragments:
             print(fr)
-        print('--------------------------------------------------------------------------------------------------------------')
+
+    def getAllEntitiesOfType(self, entityType, withLocation=False):
+        entityTexts = []
+        for index, fr in enumerate(self.fragments):
+            for ent in fr.entities:
+                if ent.type == entityType:
+                    if withLocation:
+                        entityTexts.append((ent.text, index))
+                    else:
+                        entityTexts.append(ent.text)
+        return entityTexts
+
+    def getOrgs(self):
+        orgs = self.getAllEntitiesOfType('ORG')
+        return orgs
+
+    def getDates(self):
+        dateStrs = self.getAllEntitiesOfType('DATE')
+        # dates = [(dateStr + '-->' + repr(dateParser.parse(dateStr, default=None))) for dateStr in dateStrs]
+        # print('Dates: %r' % dateStrs)
+        return dateStrs
+
+def extractKeyInformation(f):
+    f.print()
+    orgs = f.getOrgs()
+    dates = f.getDates()
+
+    # in all of the example invoices, the last organization was the vendor
+    vendorName = orgs[-1]
+
+    # in all of the example invoices, the first date was the invoice date
+    invoiceDate = dates[0]
+
+    print('vendorName:', vendorName)
+    print('invoiceDate:', invoiceDate)
+
+    print('--------------------------------------------------------------------------------------------------------------')
 
 hash = blake2b(digest_size=5)
 
@@ -54,11 +95,12 @@ def main():
     f3 = pickledLoad('../invoices/HubdocInvoice3.pdf')
     f4 = pickledLoad('../invoices/HubdocInvoice4.pdf')
     f5 = pickledLoad('../invoices/HubdocInvoice5.pdf')
-    f1.print()
-    f2.print()
-    f3.print()
-    f4.print()
-    f5.print()
+
+    extractKeyInformation(f1)
+    extractKeyInformation(f2)
+    extractKeyInformation(f3)
+    extractKeyInformation(f4)
+    extractKeyInformation(f5)
 
 def constructFragments(filename):
     with open(filename, 'rb') as inputFile:
