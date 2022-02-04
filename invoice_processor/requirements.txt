@@ -3,3 +3,5 @@ stanza
 uvicorn
 starlette
 python-multipart
+sqlalchemy
+psycopg2

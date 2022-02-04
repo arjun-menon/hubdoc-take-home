@@ -1,37 +1,44 @@
-import queue, uvicorn
-# from threading import Thread
+import queue, uvicorn, argparse, sys
+from threading import Thread
 from uuid import uuid4
 from time import time
 from io import BytesIO
 from starlette.applications import Starlette
 from starlette.responses import JSONResponse, PlainTextResponse
-from sqlalchemy import Column, Integer, Text, BLOB, REAL, create_engine
+from sqlalchemy import Column, Integer, Float, Text, LargeBinary, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy.pool import SingletonThreadPool
 from processor import constructFragmentedDocFromFile, KeyInformation
 
-verbose_level = 1  # This can be 0, 1, or 2
+verbose_level = 2  # This can be 0, 1, or 2
 
-engine = create_engine('sqlite://', poolclass=SingletonThreadPool,
-    connect_args={'check_same_thread': False}, echo=verbose_level >= 2)
+parser = argparse.ArgumentParser(description='Launch server against databse URI.')
+parser.add_argument('dburi', metavar='dburi', type=str, help='A database URI; \
+    Example: postgresql://postgres:password@localhost/pdfprocessing')
+args = parser.parse_args()
+dburi = args.dburi
+
+# engine = create_engine('sqlite://', poolclass=SingletonThreadPool,
+#     connect_args={'check_same_thread': False}, echo=verbose_level >= 2)
+engine = create_engine(dburi, echo=verbose_level >= 2)
 Base = declarative_base()
 
 class ProcessingJob(Base):
     __tablename__ = "ProcessingJob"
     uuid = Column(Text, primary_key=True, nullable=False)
     uploadedBy = Column(Text, nullable=False)
-    uploadTimestamp = Column(REAL, nullable=False)
+    uploadTimestamp = Column(Float, nullable=False)
     filesize = Column(Integer, nullable=False)
     vendorName = Column(Text)
     invoiceDate = Column(Text)
-    total = Column(REAL)
-    paid = Column (REAL)
-    totalDue = Column(REAL)
+    total = Column(Float)
+    paid = Column (Float)
+    totalDue = Column(Float)
     currency = Column(Text)
-    taxAmount = Column(REAL)
+    taxAmount = Column(Float)
     processingStatus = Column(Text, nullable=False)
-    pdf = Column(BLOB, nullable=False)
+    pdf = Column(LargeBinary, nullable=False)
 
 Base.metadata.create_all(engine)
 
@@ -60,13 +67,13 @@ def updateRowWithInfo(row, info):
     row.taxAmount = info.taxAmount
     row.processingStatus = 'DONE'
 
-q = queue.Queue()
+workQueue = queue.Queue()
 
-async def doWork():
-    while not q.empty(): # True:
-        id = q.get_nowait() # q.get(block=True, timeout=None)
+def doWork():
+    while True:
+        id = workQueue.get(block=True, timeout=None)
         if id:
-            # print(f'Working on {id}')
+            print(f'Working on {id}')
             row = session.query(ProcessingJob).get(id)
             pdf = row.pdf
 
@@ -77,10 +84,10 @@ async def doWork():
                 updateRowWithInfo(row, info)
                 session.commit()
 
-            # print(f'Finished {id}')
-            q.task_done()
+            print(f'Finished {id}')
+            workQueue.task_done()
 
-# Thread(target=worker, daemon=True).start()
+Thread(target=doWork, daemon=True).start()
 
 app = Starlette(debug=True)
 
@@ -91,8 +98,7 @@ async def upload(request):
     file = form["file"].file
     fileBytes = file.read()
     id = insertPendingJob(email, fileBytes)
-    q.put(id)
-    await doWork() # need to parallelize
+    workQueue.put(id)
     return JSONResponse({'id': id})
 
 @app.route('/document/{id:str}', methods=['GET'])
@@ -116,4 +122,5 @@ async def document(request):
     else:
         return PlainTextResponse('Not found.', status_code=404)
 
+# Launch server
 uvicorn.run(app, host='localhost', port=3000, log_level='info' if verbose_level >= 1 else 'error')
