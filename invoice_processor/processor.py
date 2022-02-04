@@ -10,6 +10,21 @@ from pdfminer.pdfdocument import PDFDocument
 from pdfminer.layout import LAParams
 from pdfminer.pdfpage import PDFPage
 
+#
+# Usage:
+#   call the function extractKeyInformation(filename)
+#   with the path to the file to be processed.
+#
+# Example:
+#   > from processor import extractKeyInformation
+#   > keyInfo = extractKeyInformation('../invoices/HubdocInvoice1.pdf')
+#
+# Example output:
+#   > keyInfo
+#   > {'vendorName': 'Hubdoc', 'invoiceDate': 'February 22, 2019', 'currency': 'GBP', 'taxAmount': 0.0, 'total': 22.5, 'totalDue': 0.0, 'paid': -22.5}
+#
+#
+
 currency_codes = {'CAD', 'USD', 'GBP', 'AUD', 'NZD'}
 
 class TextFragment(object):
@@ -178,10 +193,10 @@ class KeyInformation(object):
         print('paid:', self.paid)
         print('totalDue:', self.totalDue)
 
-def extractKeyInformation(f):
-    keyInfo = KeyInformation.extractFromFragmentedDoc(f)
-    keyInfo.print()
-    print('--------------------------------------------------------------------------------------------------------------')
+def extractKeyInformation(filename):
+    f = constructFragmentedDoc(filename)
+    keyInfoObject = KeyInformation.extractFromFragmentedDoc(f)
+    return keyInfoObject.keyInfo
 
 hash = blake2b(digest_size=5)
 
@@ -204,6 +219,11 @@ def pickledLoad(filename):
 
     return f
 
+def testKeyInformationExtraction(f):
+    print('--------------------------------------------------------------------------------------------------------------')
+    keyInfo = KeyInformation.extractFromFragmentedDoc(f)
+    keyInfo.print()
+
 def testRun():
     f1 = pickledLoad('../invoices/HubdocInvoice1.pdf')
     f2 = pickledLoad('../invoices/HubdocInvoice2.pdf')
@@ -211,13 +231,14 @@ def testRun():
     f4 = pickledLoad('../invoices/HubdocInvoice4.pdf')
     f5 = pickledLoad('../invoices/HubdocInvoice5.pdf')
 
-    extractKeyInformation(f1)
-    extractKeyInformation(f2)
-    extractKeyInformation(f3)
-    extractKeyInformation(f4)
-    extractKeyInformation(f5)
+    testKeyInformationExtraction(f1)
+    testKeyInformationExtraction(f2)
+    testKeyInformationExtraction(f3)
+    testKeyInformationExtraction(f4)
+    testKeyInformationExtraction(f5)
 
 def main():
+    print('Running tests against example invoices...')
     testRun()
 
 def constructFragmentedDoc(filename):
