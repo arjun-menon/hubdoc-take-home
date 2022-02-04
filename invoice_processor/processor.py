@@ -24,7 +24,7 @@ class TextFragment(object):
     def __str__(self):
         return '%s --> %r' % (self.text, self.entityTypes())
 
-class FileToProcess(object):
+class FragmentedDoc(object):
     def __init__(self, fragments):
         self.fragments = fragments
 
@@ -144,23 +144,43 @@ def getPaidAmount(f):
 
     return paid
 
+class KeyInformation(object):
+    def __init__(self, keyInfo):
+        self.keyInfo = keyInfo
+        self.__dict__.update(self.keyInfo)
+
+    @classmethod
+    def extractFromFragmentedDoc(classKeyInformation, f):
+        vendorName = getVendorName(f)
+        invoiceDate = getInvoiceDate(f)
+        currency = getCurrency(f)
+        taxAmount = getTaxAmount(f)
+        total = getTotal(f)
+        totalDue = getTotalDue(f)
+        paid = getPaidAmount(f)
+
+        return classKeyInformation({
+            'vendorName': vendorName,
+            'invoiceDate': invoiceDate,
+            'currency': currency,
+            'taxAmount': taxAmount,
+            'total': total,
+            'totalDue': totalDue,
+            'paid': paid
+        })
+
+    def print(self):
+        print('vendorName:', self.vendorName)
+        print('invoiceDate:', self.invoiceDate)
+        print('currency:', self.currency)
+        print('taxAmount:', self.taxAmount)
+        print('total:', self.total)
+        print('paid:', self.paid)
+        print('totalDue:', self.totalDue)
+
 def extractKeyInformation(f):
-    vendorName = getVendorName(f)
-    invoiceDate = getInvoiceDate(f)
-    currency = getCurrency(f)
-    taxAmount = getTaxAmount(f)
-    total = getTotal(f)
-    totalDue = getTotalDue(f)
-    paid = getPaidAmount(f)
-
-    print('vendorName:', vendorName)
-    print('invoiceDate:', invoiceDate)
-    print('currency:', currency)
-    print('taxAmount:', taxAmount)
-    print('total:', total)
-    print('paid:', paid)
-    print('totalDue:', totalDue)
-
+    keyInfo = KeyInformation.extractFromFragmentedDoc(f)
+    keyInfo.print()
     print('--------------------------------------------------------------------------------------------------------------')
 
 hash = blake2b(digest_size=5)
@@ -175,7 +195,7 @@ def pickledLoad(filename):
     pick_filepath = os.path.join('storage/', pickle_filename)
 
     if not os.path.isfile(pick_filepath):
-        f = FileToProcess(constructFragments(filename))
+        f = constructFragmentedDoc(filename)
         with open(pick_filepath, 'wb') as pickle_file:
             pickle.dump(f, pickle_file)
     else:
@@ -184,7 +204,7 @@ def pickledLoad(filename):
 
     return f
 
-def main():
+def testRun():
     f1 = pickledLoad('../invoices/HubdocInvoice1.pdf')
     f2 = pickledLoad('../invoices/HubdocInvoice2.pdf')
     f3 = pickledLoad('../invoices/HubdocInvoice3.pdf')
@@ -197,7 +217,10 @@ def main():
     extractKeyInformation(f4)
     extractKeyInformation(f5)
 
-def constructFragments(filename):
+def main():
+    testRun()
+
+def constructFragmentedDoc(filename):
     with open(filename, 'rb') as inputFile:
         minedTextNormal = mineTextNormal(inputFile)
         minedTextTagged = mineTextTagged(inputFile)
@@ -244,7 +267,7 @@ def constructFragments(filename):
         doc = nlp(fr.text)
         fr.entities = doc.ents
 
-    return fragments
+    return FragmentedDoc(fragments)
 
 def isInRanges(n, ranges):
         for (start, end) in ranges:
