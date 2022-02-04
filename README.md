@@ -1,6 +1,6 @@
 # Solution Implementation Overview
 
-### Overview
+## Overview
 
 I've implemented the solution to this in Python.
 My code lives inside `invoice_processor`.
@@ -9,7 +9,7 @@ There are two modules under `invoice_processor`: `server` and `processor`.
 
 All of the logic for the PDF processing lives inside `processor`. The `processor` can be launched and tested separately.
 
-### Using `processor` independently
+## Using `processor` independently
 
 If you import the function extractKeyInformation(filename) from processor, and give it a path to a file to be processed, you'll get back a dictionary with key fields extracted.
 
@@ -22,7 +22,7 @@ For example, on a Python prompt (while pwd is invoice_processor) we can:
 
 If `processor.py` is run directly from the command-line, a set of tests (I suppose what are effectively integration tests) involving the 5 sample hubdoc invoices is run. The command-line output should display information extracted from all 5 of them.
 
-### The server
+## The server
 
 The `server` does things like handling requests, remembering requests, and working on them. The server has two thread.
 
@@ -30,22 +30,24 @@ The main thread asynchronously handles API requests, while a second worker threa
 
 I've used `starlette` which is layer on top of `uvicorn` as my web framework, along with SQLAlchemy as my ORM, to build the server.
 
-### Running
+## Running
 
 This project requires Postgres (or some other SQL server) as well as the the Python dependencies that are listed under `requirements.txt`, which are:
-* pdfminer
-* stanza
-* uvicorn
-* starlette
-* python-multipart
-* sqlalchemy
-* psycopg2
+* pdfminer - for turning the PDF to text
+* stanza - a NLP library for recognizing text fragment type
+* uvicorn - an asynchronous Python server implementation
+* starlette - a web framework that's a layer over starlette
+* python-multipart - a library to handle/process `multipart/form-data` (incl. file upload) requests
+* sqlalchemy - a SQL ORM
+* psycopg2 - to talk to the Postgres DBAPI
+
+These dependenices can be installed all at once by running `pip install -r requirements.txt`, or they can also be individually installed with `pip install dependency_name`.
 
 To launch the server, the `server.py` should be run with a special URI representing the database to connect to as the sole argument, like so:
 
-    python .\server.py postgresql://postgres:password@localhost/pdfprocessing
+    python server.py postgresql://postgres:password@localhost/pdfprocessing
 
-Note that `password` above must be replaced with the actual password. The `postgres` before the password is the postgres username. The `pdfprocessing` at the end is the database name.
+Note that `password` above must be replaced with the actual password. The `postgres` before the password is the postgres username. The `pdfprocessing` at the end represents the database name.
 
 # Hubdoc Document Intake (Problem Description)
 
