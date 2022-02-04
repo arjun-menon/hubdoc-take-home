@@ -4,6 +4,52 @@ from time import time
 from processor import extractKeyInformation
 from starlette.applications import Starlette
 from starlette.responses import JSONResponse
+from sqlalchemy import Column, Integer, Text, BLOB, REAL, create_engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship, backref, sessionmaker, joinedload
+
+verbose = True
+
+engine = create_engine('sqlite://', echo=verbose)
+
+Base = declarative_base()
+
+class ProcessingJob(Base):
+    __tablename__ = "ProcessingJob"
+    uuid = Column(Text, primary_key=True, nullable=False)
+    uploadedBy = Column(Text, nullable=False)
+    uploadTimestamp = Column(REAL, nullable=False)
+    filesize = Column(Integer)
+    vendorName = Column(Text)
+    invoiceDate = Column(Text)
+    total = Column(REAL)
+    totalDue = Column(REAL)
+    currency = Column(Text)
+    taxAmount = Column(REAL)
+    processingStatus = Column(Text, nullable=False)
+    pdf = Column(BLOB)
+
+Base.metadata.create_all(engine)
+
+Session = sessionmaker(bind=engine)
+session = Session()
+
+def insertPendingJob(uploadedBy, pdf):
+    uuid = uuid4().hex
+    filesize = len(pdf)
+    uploadTimestamp = time()
+
+    # self.dbCur.execute('''INSERT INTO ProcessingJob(
+    #     uuid, uploadedBy, uploadTimestamp, filesize, processingStatus, pdf)
+    #     VALUES (?, ?, ?, ?, ?, ?)''', (uuid, uploadedBy, uploadTimestamp, filesize, 'PENDING', pdf))
+
+    job = ProcessingJob(uuid=uuid, uploadedBy=uploadedBy, uploadTimestamp=uploadTimestamp,
+        processingStatus='PENDING', pdf=pdf)
+
+    session.add(job)
+    session.commit()
+
+    return uuid
 
 class ProcessingJobs(object):
     def __init__(self):
@@ -54,11 +100,25 @@ async def upload(request):
     email = form["email"]
     file = form["file"].file
     fileBytes = file.read()
-    uuid = jobs.insertPendingJob(email, fileBytes)
+    uuid = insertPendingJob(email, fileBytes)
     return JSONResponse({'id': uuid})
 
-@app.route('/document', methods=['GET'])
+@app.route('/document/{id:str}', methods=['GET'])
 async def document(request):
-    return JSONResponse({'id': 'todo'})
+    id = request.path_params['id']
+    print('Seeking ID:', id)
+    for row in session.query(ProcessingJob).filter(ProcessingJob.uuid == id):
+        return JSONResponse({
+            'uploadedBy': row.uploadedBy,
+            'uploadTimestamp': row.uploadTimestamp,
+            'filesize': row.filesize,
+            'vendorName': row.vendorName,
+            'invoiceDate': row.invoiceDate,
+            'total': row.total,
+            'totalDue': row.totalDue,
+            'currency': row.currency,
+            'taxAmount': row.taxAmount,
+            'processingStatus': row.processingStatus,
+        })
 
-uvicorn.run(app, host='localhost', port=3000, log_level='info')
+uvicorn.run(app, host='localhost', port=3000, log_level='info' if verbose else 'error')
