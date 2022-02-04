@@ -2,7 +2,6 @@ from email.policy import default
 import stanza, os, pickle
 from hashlib import blake2b
 from io import StringIO, BytesIO
-import dateutil.parser as dateParser
 from pdfminer.pdfparser import PDFParser
 from pdfminer.converter import TextConverter
 from pdfminer.pdfdevice import TagExtractor
@@ -10,6 +9,8 @@ from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
 from pdfminer.pdfdocument import PDFDocument
 from pdfminer.layout import LAParams
 from pdfminer.pdfpage import PDFPage
+
+currency_codes = {'CAD', 'USD', 'GBP', 'AUD', 'NZD'}
 
 class TextFragment(object):
     def __init__(self, textFragment):
@@ -52,19 +53,69 @@ class FileToProcess(object):
         # print('Dates: %r' % dateStrs)
         return dateStrs
 
-def extractKeyInformation(f):
-    f.print()
+    def findCurrencyCodes(self):
+        currencies = []
+        for fr in self.fragments:
+            if fr.text in currency_codes:
+                currencies.append(fr.text)
+        return currencies
+
+    def findPercentsWithIndices(self):
+        return self.getAllEntitiesOfType('PERCENT', True)
+
+def getVendorName(f):
     orgs = f.getOrgs()
-    dates = f.getDates()
 
     # in all of the example invoices, the last organization was the vendor
     vendorName = orgs[-1]
 
+    return vendorName
+
+def getInvoiceDate(f):
+    dates = f.getDates()
+
     # in all of the example invoices, the first date was the invoice date
     invoiceDate = dates[0]
 
+    return invoiceDate
+
+def getCurrency(f):
+    currencies = f.findCurrencyCodes()
+
+    # we only expect there to be one currency code in the PDF, based on example invoices
+    # in a proper implementation, we do something different here (throw an exception, or attempt to narrow down to the right currency).
+    assert len(currencies) == 1
+    currency = currencies[0]
+
+    return currency
+
+def getTaxAmount(f):
+    percents = f.findPercentsWithIndices()
+
+    # we grab the last percent as the tax, based on the example invoices
+    _, lastPercentIndex = percents[-1]
+    taxFragment = f.fragments[lastPercentIndex + 1]
+    # the assertions below are based on structural expectations based on the example invoices
+    # in a proper implementation, we'd replace these assertions with intelligent hueristics, guesses, and/or with exceptions thrown.
+    assert len(taxFragment.entities) == 1
+    taxEntity = taxFragment.entities[0]
+    assert taxEntity.type == 'MONEY'
+    taxAmount = round(float(taxEntity.text), 2)
+
+    return taxAmount
+
+def extractKeyInformation(f):
+    f.print()
+
+    vendorName = getVendorName(f)
+    invoiceDate = getInvoiceDate(f)
+    currency = getCurrency(f)
+    taxAmount = getTaxAmount(f)
+
     print('vendorName:', vendorName)
     print('invoiceDate:', invoiceDate)
+    print('currency:', currency)
+    print('taxAmount:', taxAmount)
 
     print('--------------------------------------------------------------------------------------------------------------')
 
