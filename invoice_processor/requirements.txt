@@ -1,0 +1,5 @@
+pdfminer
+stanza
+uvicorn
+starlette
+python-multipart
