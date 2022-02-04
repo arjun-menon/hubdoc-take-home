@@ -1,4 +1,5 @@
-import stanza
+import stanza, os, pickle
+from hashlib import blake2b
 from io import StringIO, BytesIO
 from pdfminer.pdfparser import PDFParser
 from pdfminer.converter import TextConverter
@@ -13,19 +14,56 @@ class TextFragment(object):
         self.text = textFragment
         self.pos = None
         self.entities = None
+    def entityTypes(self):
+        return [ent.type for ent in self.entities]
     def __str__(self):
-        return '%s %r' % (self.text, self.entities)
+        return '%s --> %r' % (self.text, self.entityTypes())
+
+class FileToProcess(object):
+    def __init__(self, fragments):
+        self.fragments = fragments
+    def print(self):
+        for fr in self.fragments:
+            print(fr)
+        print('--------------------------------------------------------------------------------------------------------------')
+
+hash = blake2b(digest_size=5)
+
+def pickledLoad(filename):
+    filename_root, filename_ext = os.path.splitext(filename)
+    hash.update(filename_root.encode())
+    filename_root_hash = hash.hexdigest()
+    filename_path = os.path.split(filename_root)
+    assert filename_ext == '.pdf'
+    pickle_filename = filename_path[-1] + '-' + filename_root_hash + '.pickle'
+    pick_filepath = os.path.join('storage/', pickle_filename)
+
+    if not os.path.isfile(pick_filepath):
+        f = FileToProcess(constructFragments(filename))
+        with open(pick_filepath, 'wb') as pickle_file:
+            pickle.dump(f, pickle_file)
+    else:
+        with open(pick_filepath, 'rb') as pickle_file:
+            f = pickle.load(pickle_file)
+
+    return f
 
 def main():
-    fragments = constructFragments('../invoices/HubdocInvoice1.pdf')
-
-    for fr in fragments:
-        print(fr, '\n')
+    f1 = pickledLoad('../invoices/HubdocInvoice1.pdf')
+    f2 = pickledLoad('../invoices/HubdocInvoice2.pdf')
+    f3 = pickledLoad('../invoices/HubdocInvoice3.pdf')
+    f4 = pickledLoad('../invoices/HubdocInvoice4.pdf')
+    f5 = pickledLoad('../invoices/HubdocInvoice5.pdf')
+    f1.print()
+    f2.print()
+    f3.print()
+    f4.print()
+    f5.print()
 
 def constructFragments(filename):
     with open(filename, 'rb') as inputFile:
-        minedTextNormal = mineText1(inputFile)
-        minedTextTagged = mineText2(inputFile)
+        minedTextNormal = mineTextNormal(inputFile)
+        minedTextTagged = mineTextTagged(inputFile)
 
     fragments = [TextFragment(textFragment) for textFragment in 
             filter(
@@ -85,7 +123,7 @@ def findall(p, s): # based on https://stackoverflow.com/a/34445090
         yield (i, i + len(p) - 1)
         i = s.find(p, i+1)
 
-def mineText1(inputFile):
+def mineTextNormal(inputFile):
     outputString = StringIO()
     pdfParser = PDFParser(inputFile)
     pdfDocument = PDFDocument(pdfParser)
@@ -96,7 +134,7 @@ def mineText1(inputFile):
         interpreter.process_page(page)
     return outputString.getvalue()
 
-def mineText2(inputFile):
+def mineTextTagged(inputFile):
     outputFile = BytesIO()
     resourceManager = PDFResourceManager()
     device = TagExtractor(resourceManager, outputFile, codec='utf-8')
