@@ -1,19 +1,21 @@
-import uvicorn, json, sqlite3
-from threading import Thread, Lock
+import queue, uvicorn
+# from threading import Thread
 from uuid import uuid4
 from time import time
-from processor import extractKeyInformation
+from io import BytesIO
 from starlette.applications import Starlette
-from starlette.responses import JSONResponse
+from starlette.responses import JSONResponse, PlainTextResponse
 from sqlalchemy import Column, Integer, Text, BLOB, REAL, create_engine
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship, backref, sessionmaker, joinedload
+from sqlalchemy.orm import sessionmaker, scoped_session
+from sqlalchemy.pool import SingletonThreadPool
+from processor import constructFragmentedDocFromFile, KeyInformation
 
 verbose = True
 
-engine = create_engine('sqlite://', echo=verbose)
+engine = create_engine('sqlite://', poolclass=SingletonThreadPool,
+    connect_args={'check_same_thread': False}, echo=False)
 Base = declarative_base()
-dbMutex = Lock()
 
 class ProcessingJob(Base):
     __tablename__ = "ProcessingJob"
@@ -33,7 +35,8 @@ class ProcessingJob(Base):
 
 Base.metadata.create_all(engine)
 
-Session = sessionmaker(bind=engine)
+sessionMake = sessionmaker(bind=engine)
+Session = scoped_session(sessionMake)
 session = Session()
 
 def insertPendingJob(uploadedBy, pdf):
@@ -47,6 +50,38 @@ def insertPendingJob(uploadedBy, pdf):
     session.commit()
     return uuid
 
+q = queue.Queue()
+
+def updateRowWithInfo(row, info):
+    row.vendorName = info.vendorName
+    row.invoiceDate = info.invoiceDate
+    row.total = info.total
+    row.paid = info.paid
+    row.totalDue = info.totalDue
+    row.currency = info.currency
+    row.taxAmount = info.taxAmount
+    row.processingStatus = 'DONE'
+
+def doWork():
+    while not q.empty(): # True:
+        id = q.get_nowait() # q.get(block=True, timeout=None)
+        if id:
+            print(f'Working on {id}')
+            row = session.query(ProcessingJob).get(id)
+            pdf = row.pdf
+
+            if isinstance(pdf, bytes):
+                pdfBytesFiles = BytesIO(pdf)
+                fd = constructFragmentedDocFromFile(pdfBytesFiles)
+                info = KeyInformation.extractFromFragmentedDoc(fd)
+                updateRowWithInfo(row, info)
+                session.commit()
+
+            print(f'Finished {id}')
+            q.task_done()
+
+# Thread(target=worker, daemon=True).start()
+
 app = Starlette(debug=True)
 
 @app.route('/upload', methods=['POST'])
@@ -55,14 +90,17 @@ async def upload(request):
     email = form["email"]
     file = form["file"].file
     fileBytes = file.read()
-    uuid = insertPendingJob(email, fileBytes)
-    return JSONResponse({'id': uuid})
+    id = insertPendingJob(email, fileBytes)
+    q.put(id)
+    doWork()
+    return JSONResponse({'id': id})
 
 @app.route('/document/{id:str}', methods=['GET'])
 async def document(request):
     id = request.path_params['id']
-    print('Seeking ID:', id)
-    for row in session.query(ProcessingJob).filter(ProcessingJob.uuid == id):
+    Session = scoped_session(sessionmaker(bind=engine))
+    row = Session.query(ProcessingJob).get(id)
+    if row:
         return JSONResponse({
             'uploadedBy': row.uploadedBy,
             'uploadTimestamp': row.uploadTimestamp,
@@ -75,5 +113,7 @@ async def document(request):
             'taxAmount': row.taxAmount,
             'processingStatus': row.processingStatus,
         })
+    else:
+        return PlainTextResponse('Not found.', status_code=404)
 
 uvicorn.run(app, host='localhost', port=3000, log_level='info' if verbose else 'error')
