@@ -1,4 +1,3 @@
-from email.policy import default
 import stanza, os, pickle
 from hashlib import blake2b
 from io import StringIO, BytesIO
