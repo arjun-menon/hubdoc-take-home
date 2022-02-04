@@ -242,8 +242,11 @@ def main():
 
 def constructFragmentedDoc(filename):
     with open(filename, 'rb') as inputFile:
-        minedTextNormal = mineTextNormal(inputFile)
-        minedTextTagged = mineTextTagged(inputFile)
+        constructFragmentedDocFromFile(inputFile)
+
+def constructFragmentedDocFromFile(inputFile):
+    minedTextNormal = mineTextNormal(inputFile)
+    minedTextTagged = mineTextTagged(inputFile)
 
     fragments = [TextFragment(textFragment) for textFragment in 
             filter(
