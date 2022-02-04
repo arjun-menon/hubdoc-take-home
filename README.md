@@ -1,4 +1,47 @@
-# Hubdoc Document Intake
+# Solution Implementation Overview
+
+### Overview
+
+I've implemented the solution to this in Python.
+My code lives inside `invoice_processor`.
+
+There are two modules under `invoice_processor`: `server` and `processor`.
+
+All of the logic for the PDF processing lives inside `processor`. The `processor` can be launched and tested separately.
+
+### Using `processor` independently
+
+If you import the function extractKeyInformation(filename) from processor, and give it a path to a file to be processed, you'll get back a dictionary with key fields extracted.
+
+For example, on a Python prompt (while pwd is invoice_processor) we can:
+
+    >>> from processor import extractKeyInformation
+    >>> keyInfo = extractKeyInformation('../invoices/HubdocInvoice1.pdf')
+    >>> keyInfo
+    {'vendorName': 'Hubdoc', 'invoiceDate': 'February 22, 2019', 'currency': 'GBP', 'taxAmount': 0.0, 'total': 22.5, 'paid': -22.5, 'totalDue': 0.0}
+
+If `processor.py` is run directly from the command-line, a set of tests (I suppose what are effectively integration tests) involving the 5 sample hubdoc invoices is run. The command-line output should display information extracted from all 5 of them.
+
+### The server
+
+The `server` does things like handling requests, remembering requests, and working on them. The server has two thread.
+
+The main thread asynchronously handles API requests, while a second worker thread works on completing PDF processing tasks (it receives its work via Python's [queue](https://docs.python.org/3/library/queue.html) class that's designed for multithreading).
+
+I've used `starlette` which is layer on top of `uvicorn` as my web framework, along with SQLAlchemy as my ORM, to build the server.
+
+### Running
+
+This project requires Postgres (or some other SQL server) as well as the the Python dependencies that are listed under `requirements.txt`, which are:
+* pdfminer
+* stanza
+* uvicorn
+* starlette
+* python-multipart
+* sqlalchemy
+* psycopg2
+
+# Hubdoc Document Intake (Problem Description)
 
 ## Background:
 
