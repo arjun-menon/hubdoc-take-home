@@ -11,10 +11,10 @@ from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy.pool import SingletonThreadPool
 from processor import constructFragmentedDocFromFile, KeyInformation
 
-verbose = True
+verbose_level = 1  # This can be 0, 1, or 2
 
 engine = create_engine('sqlite://', poolclass=SingletonThreadPool,
-    connect_args={'check_same_thread': False}, echo=False)
+    connect_args={'check_same_thread': False}, echo=verbose_level >= 2)
 Base = declarative_base()
 
 class ProcessingJob(Base):
@@ -50,8 +50,6 @@ def insertPendingJob(uploadedBy, pdf):
     session.commit()
     return uuid
 
-q = queue.Queue()
-
 def updateRowWithInfo(row, info):
     row.vendorName = info.vendorName
     row.invoiceDate = info.invoiceDate
@@ -62,11 +60,13 @@ def updateRowWithInfo(row, info):
     row.taxAmount = info.taxAmount
     row.processingStatus = 'DONE'
 
-def doWork():
+q = queue.Queue()
+
+async def doWork():
     while not q.empty(): # True:
         id = q.get_nowait() # q.get(block=True, timeout=None)
         if id:
-            print(f'Working on {id}')
+            # print(f'Working on {id}')
             row = session.query(ProcessingJob).get(id)
             pdf = row.pdf
 
@@ -77,7 +77,7 @@ def doWork():
                 updateRowWithInfo(row, info)
                 session.commit()
 
-            print(f'Finished {id}')
+            # print(f'Finished {id}')
             q.task_done()
 
 # Thread(target=worker, daemon=True).start()
@@ -92,7 +92,7 @@ async def upload(request):
     fileBytes = file.read()
     id = insertPendingJob(email, fileBytes)
     q.put(id)
-    doWork()
+    await doWork() # need to parallelize
     return JSONResponse({'id': id})
 
 @app.route('/document/{id:str}', methods=['GET'])
@@ -116,4 +116,4 @@ async def document(request):
     else:
         return PlainTextResponse('Not found.', status_code=404)
 
-uvicorn.run(app, host='localhost', port=3000, log_level='info' if verbose else 'error')
+uvicorn.run(app, host='localhost', port=3000, log_level='info' if verbose_level >= 1 else 'error')
