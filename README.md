@@ -41,6 +41,12 @@ This project requires Postgres (or some other SQL server) as well as the the Pyt
 * sqlalchemy
 * psycopg2
 
+To launch the server, the `server.py` should be run with a special URI representing the database to connect to as the sole argument, like so:
+
+    python .\server.py postgresql://postgres:password@localhost/pdfprocessing
+
+Note that `password` above must be replaced with the actual password. The `postgres` before the password is the postgres username. The `pdfprocessing` at the end is the database name.
+
 # Hubdoc Document Intake (Problem Description)
 
 ## Background:
