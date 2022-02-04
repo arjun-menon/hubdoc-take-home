@@ -8,6 +8,9 @@ from pdfminer.pdfdocument import PDFDocument
 from pdfminer.layout import LAParams
 from pdfminer.pdfpage import PDFPage
 
+class Entity(object):
+    pass
+
 def main():
     print('Processing...\n')
 
@@ -15,15 +18,18 @@ def main():
         minedText1 = mineText1(inputFile)
         minedText2 = mineText2(inputFile)
 
-    print(minedText1)
+    fragments = list(filter(lambda s: len(s) > 0, (map(lambda s: s.strip(), minedText1.split('\n')))))
+
+    print(fragments)
     print('\n\n\n\n')
     print(minedText2)
     print('\n\n\n\n')
 
-    nlp = stanza.Pipeline(lang='en', processors='tokenize,ner')
-    doc = nlp(minedText1)
-    print(*[f'entity: {ent.text}\ttype: {ent.type}\tstr: \
-{minedText1[ent.start_char:ent.end_char]}' for ent in doc.ents], sep='\n')
+    nlp = stanza.Pipeline(lang='en', processors='tokenize,ner', verbose=False)
+    for frag in fragments:
+        doc = nlp(frag)
+        print(frag, repr(doc.ents))
+        print()
 
 def mineText1(inputFile):
     outputString = StringIO()
