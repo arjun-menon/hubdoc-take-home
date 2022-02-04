@@ -114,6 +114,7 @@ async def document(request):
             'vendorName': row.vendorName,
             'invoiceDate': row.invoiceDate,
             'total': row.total,
+            'paid': row.paid,
             'totalDue': row.totalDue,
             'currency': row.currency,
             'taxAmount': row.taxAmount,
