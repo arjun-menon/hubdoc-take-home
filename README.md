@@ -2,8 +2,9 @@
 
 ## Overview
 
-I've implemented the solution to this in Python.
-My code lives inside `invoice_processor`.
+I've implemented the solution to this in Python. My code lives inside `invoice_processor`. For the PDF extraction, I've relied on pdfminer (instead of pdftotext), and Stanza (a NLP library). The extraction logic is fairly specific in some aspects to the 5 sample Hubdoc invoices, but I've tried to make it as intelligent as possible where possible. On the server side, I've used an asynchronous web framework combo of starlett and uvicorn, and SQLAlchemy (an ORM) with Postgres.
+
+My solution is able to extract all of the key information accurately, for all of the example invoices provided. The server can accept several PDF extraction requests (handled asynchronously), and work on them separately in parallel.
 
 There are two modules under `invoice_processor`: `server` and `processor`.
 
